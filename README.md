@@ -4,7 +4,9 @@ iCalendar parser written using Qt
 
 
 ===== Build Dependencies =====
-Requires libqt4-dev on K/Ubuntu
+
+Bulid using Qt version 5.15.
+
 
 ===== Build Instructions =====
 
