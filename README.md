@@ -1,4 +1,6 @@
-iCal parser written using Qt
+libQCalParser
+============
+iCalendar parser written using Qt
 
 
 ===== Build Dependencies =====
@@ -20,3 +22,11 @@ Requires libqt4-dev on K/Ubuntu
 
 5) [Optional] Install using make install :
     sudo make install
+
+
+License
+-------
+
+This project is originally developed by Rohan Garg <rohan.garg@intel.com>, but is now continued and supported by [pranatahouse](http://pranatahouse.com).
+
+Released under the [GNU GPL v3](http://www.gnu.org/licenses/gpl.html).
