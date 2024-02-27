@@ -1,13 +1,14 @@
 /*
  * This file is part of libqcalparser
  *
- * Copyright (C) Rohan Garg <rohan16garg@gmail.com>
+ * Copyright (C) 2024 pranatahouse <pranatahouse@gmail.com>
+ * Copyright (C) 2011 Rohan Garg <rohan16garg@gmail.com>
  * Copyright (C) 2011 Harald Sitter <apachelogger@ubuntu.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 3.0 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -25,14 +26,14 @@
 #include <QtCore/QFile>
 #include <QtCore/QStringList>
 #include <QtCore/QTextStream>
+#include <QtCore/QTimeZone>
 
 #include "qcalevent.h"
 
-QCalParser::QCalParser(QObject *parent) :
-    QObject(parent),
-    m_dataStream(0)
-{
-}
+QCalParser::QCalParser(QObject *parent)
+    : QObject(parent)
+    , m_dataStream(0)
+{}
 
 QCalParser::~QCalParser()
 {
@@ -66,8 +67,8 @@ bool QCalParser::parse(QFile *file)
 void QCalParser::parse()
 {
     QString line = m_dataStream->readLine();
-    while(!line.isNull()) {
-        if(line.contains("BEGIN:VEVENT")) {
+    while (!line.isNull()) {
+        if (line.contains("BEGIN:VEVENT")) {
             parseBlock();
         }
 
@@ -79,20 +80,56 @@ void QCalParser::parseBlock()
 {
     QSharedPointer<QCalEvent> event = QSharedPointer<QCalEvent>(new QCalEvent);
     QString line;
+    QString lastKey;
     while (!(line = m_dataStream->readLine()).contains(QByteArray("END:VEVENT"))) {
         const int deliminatorPosition = line.indexOf(QLatin1Char(':'));
-        const QString key   = line.mid(0, deliminatorPosition);
-        const QString value = line.mid(deliminatorPosition + 1, -1);
-
-        if (key == QLatin1String("DTSTART") || key == QLatin1String("DTEND")) {
+        QString key   = line.mid(0, deliminatorPosition);
+        QString value = line.mid(deliminatorPosition + 1, -1);
+        
+        if (key.contains(QLatin1String("DTSTART")) || key.contains(QLatin1String("DTEND"))) {
+            QTimeZone tz;
+            if (line.contains("TZID")) {
+                int postz = line.indexOf("TZID=") + 5;
+                QString stzone = line.mid(postz, line.indexOf("\":") - postz);
+                stzone = stzone.replace("\"", "");
+                tz = QTimeZone(stzone.toLatin1());
+                key = line.mid(0, line.indexOf(";"));
+                value = line.mid(line.lastIndexOf(":") + 1);
+            }
+            
             QDateTime utcTime = QDateTime::fromString(value, "yyyyMMdd'T'hhmmss'Z'");
+            if (!utcTime.isValid()) {
+                utcTime = QDateTime::fromString(value, "yyyyMMdd'T'hhmmss");
+            }
             utcTime.setTimeSpec(Qt::UTC);
+            
+            if (tz.isValid()) {
+                utcTime.setTimeZone(tz);
+            }
+            
             event->setProperty(key, utcTime.toLocalTime());
-            continue;
-        } else if (key == QLatin1String("CATEGORIES")) {
+            lastKey = key;
+        }
+        
+        else if (key == QLatin1String("CATEGORIES")) {
             event->setProperty(key, value.split(" " || ",", QString::SkipEmptyParts));
-        } else {
+            lastKey = key;
+        }
+        
+        else if (key == QLatin1String("SUMMARY")
+                 || key == "UID"
+                 || key == "DESCRIPTION"
+                 || key == "LOCATION"
+                 || key == "URL"
+                 || key == "DTSTAMP"
+                 ) {
             event->setProperty(key, value);
+            lastKey = key;
+        }
+        
+        else {
+            QString val = event->property(lastKey.toLower()).toString();
+            event->setProperty(lastKey, val + value);
         }
     }
     m_eventList.append(event);

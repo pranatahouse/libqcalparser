@@ -1,6 +1,8 @@
 /*
  * This file is part of libqcalparser
  *
+ * Copyright (C) 2024 pranatahouse <pranatahouse@gmail.com>
+ * Copyright (C) 2011 Rohan Garg <rohan16garg@gmail.com>
  * Copyright (C) 2011 Harald Sitter <apachelogger@ubuntu.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -22,14 +24,11 @@
 
 #include <QtCore/QDebug>
 
-QCalEvent::QCalEvent(QObject *parent) :
-    QObject(parent)
-{
-}
+QCalEvent::QCalEvent(QObject *parent)
+    : QObject(parent)
+{}
 
-QCalEvent::~QCalEvent()
-{
-}
+QCalEvent::~QCalEvent() {}
 
 QDebug operator<<(QDebug dbg, const QCalEvent &c)
 {
